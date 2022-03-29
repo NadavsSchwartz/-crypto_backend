@@ -5,7 +5,9 @@ module Api
 		class CryptoDataController < ApplicationController
 			# GET /crypto_data/nfts
 			def nfts
-				render json: Rails.cache.fetch('nfts') if Rails.cache.exist?('nfts')
+				if Rails.cache.exist?('nfts')
+					return render json: Rails.cache.fetch('nfts')
+				end
 
 				begin
 					@max_retries = 3
@@ -46,7 +48,7 @@ module Api
 			# GET /crypto_data/stats
 			def global_crypto_stats
 				if Rails.cache.exist?('global_stats')
-					render json: Rails.cache.fetch('global_stats')
+					return render json: Rails.cache.fetch('global_stats')
 				end
 				@response =
 					HTTParty.get(
@@ -57,25 +59,30 @@ module Api
 					)
 				if @response['status'] === 'success' || @response.code === 200
 					Rails.cache.write('global_stats', @response, expires_in: 2.minutes)
-					render json: @response
+					return render json: @response
 				elsif @response.headers['x-ratelimit-remaining-month'].to_i < 1
-					render json: {
-							errors: 'api rate limit met for this month. try again next month',
-					       },
-					       status: @response.code
+					return(
+						render json: {
+								errors:
+									'api rate limit met for this month. try again next month',
+						       },
+						       status: @response.code
+					)
 				else
-					render json: {
-							errors: 'couldn\'t complete the request. please try again',
-							data: @response,
-					       },
-					       status: @response.code
+					return(
+						render json: {
+								errors: 'couldn\'t complete the request. please try again',
+								data: @response,
+						       },
+						       status: @response.code
+					)
 				end
 			end
 
 			# POST /crypto_data/exchanges
 			def crypto_exchanges
 				if Rails.cache.exist?('exchanges')
-					render json: Rails.cache.fetch('exchanges')
+					return render json: Rails.cache.fetch('exchanges')
 				end
 				@response =
 					HTTParty.get(
@@ -88,18 +95,23 @@ module Api
 
 				if @response['status'] === 'success' || @response.code === 200
 					Rails.cache.write('exchanges', @response, expires_in: 2.minutes)
-					render json: @response
+					return render json: @response
 				elsif @response.headers['X-Ratelimit-Remaining'].to_i < 1
-					render json: {
-							errors: 'api rate limit met for this month. try again next month',
-					       },
-					       status: @response.code
+					return(
+						render json: {
+								errors:
+									'api rate limit met for this month. try again next month',
+						       },
+						       status: @response.code
+					)
 				else
-					render json: {
-							errors: 'couldn\'t complete the request. please try again',
-							data: @response,
-					       },
-					       status: @response.code
+					return(
+						render json: {
+								errors: 'couldn\'t complete the request. please try again',
+								data: @response,
+						       },
+						       status: @response.code
+					)
 				end
 			end
 
@@ -180,27 +192,33 @@ module Api
 							},
 						)
 					if @response['status'] === 'success' || @response.code === 200
-						render json: @response
+						return render json: @response
 					elsif @response.headers['x-ratelimit-remaining-month'].to_i < 1
-						render json: {
-								errors:
-									'api rate limit met for this month. try again next month',
-						       },
-						       status: 422
+						return(
+							render json: {
+									errors:
+										'api rate limit met for this month. try again next month',
+							       },
+							       status: 422
+						)
 					else
-						render json: {
-								errors: 'couldn\'t complete the request. please try again',
-								data: @response,
-						       },
-						       status: @response.code
+						return(
+							render json: {
+									errors: 'couldn\'t complete the request. please try again',
+									data: @response,
+							       },
+							       status: @response.code
+						)
 					end
 				else
-					render json: {
-							errors:
-								'couldn\'t complete the request. please double check the params passed.',
-							data: params,
-					       },
-					       status: 404
+					return(
+						render json: {
+								errors:
+									'couldn\'t complete the request. please double check the params passed.',
+								data: params,
+						       },
+						       status: 404
+					)
 				end
 			end
 
@@ -208,7 +226,7 @@ module Api
 
 			# Use callbacks to share common setup or constraints between actions.
 			def set_crypto_data
-				@crypto_data = CryptoData.find(params[:id])
+				return @crypto_data = CryptoData.find(params[:id])
 			end
 
 			# Only allow a trusted parameter "white list" through.
