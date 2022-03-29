@@ -5,41 +5,58 @@ module Api
 		class CryptoDataController < ApplicationController
 			# GET /crypto_data/nfts
 			def nfts
-				@response =
-					HTTParty.get(
-						'https://api.coinranking.com/v2/nfts?orderBy=auctionCreatedAt&orderDirection=desc&limit=10',
-						headers: {
-							'x-access-token' =>
-								'coinrankingb11dd5d6079f60e918417565de273e895b2fda51e7b353bd',
-						},
+				render json: Rails.cache.fetch('nfts') if Rails.cache.exist?('nfts')
+
+				begin
+					@max_retries = 3
+					@times_retried = 0
+					@response =
+						HTTParty.get(
+							'https://api.coinranking.com/v2/nfts?orderBy=auctionCreatedAt&orderDirection=desc&limit=10',
+							headers: {
+								'x-access-token' => ENV['COINRANKING_API_KEY'],
+							},
+							timeout: 5,
+						)
+					if @response['status'] === 'success' || @response.code === 200
+						Rails.cache.write('nfts', @response, expires_in: 60.minutes)
+						render json: @response
+					elsif @response.headers['x-ratelimit-remaining-month'].to_i < 1
+						render json: {
+								errors:
+									'api rate limit met for this month. try again next month',
+						       },
+						       status: @response.code
+					else
+						render json: {
+								error: 'couldn\'t complete the request. please try again',
+						       },
+						       status: @response.code
+					end
+				rescue Net::ReadTimeout => error
+					return(
+						render json: {
+								error: 'couldn\'t complete the request. please try again',
+						       },
+						       status: 500
 					)
-				if @response['status'] === 'success' || @response.code === 200
-					render json: @response
-				elsif @response.headers['x-ratelimit-remaining-month'].to_i < 1
-					render json: {
-							errors: 'api rate limit met for this month. try again next month',
-					       },
-					       status: @response.code
-				else
-					render json: {
-							errors: 'couldn\'t complete the request. please try again',
-							data: @response,
-					       },
-					       status: @response.code
 				end
 			end
 
 			# GET /crypto_data/stats
 			def global_crypto_stats
+				if Rails.cache.exist?('global_stats')
+					render json: Rails.cache.fetch('global_stats')
+				end
 				@response =
 					HTTParty.get(
 						'https://api.coinranking.com/v2/stats',
 						headers: {
-							'x-access-token' =>
-								'coinrankingb11dd5d6079f60e918417565de273e895b2fda51e7b353bd',
+							'x-access-token' => ENV['COINRANKING_API_KEY'],
 						},
 					)
 				if @response['status'] === 'success' || @response.code === 200
+					Rails.cache.write('global_stats', @response, expires_in: 2.minutes)
 					render json: @response
 				elsif @response.headers['x-ratelimit-remaining-month'].to_i < 1
 					render json: {
@@ -55,10 +72,11 @@ module Api
 				end
 			end
 
-			# /exchanges?orderBy=24hVolume&orderDirection=desc
-
 			# POST /crypto_data/exchanges
 			def crypto_exchanges
+				if Rails.cache.exist?('exchanges')
+					render json: Rails.cache.fetch('exchanges')
+				end
 				@response =
 					HTTParty.get(
 						'https://api.coincap.io/v2/exchanges',
@@ -69,6 +87,7 @@ module Api
 					)
 
 				if @response['status'] === 'success' || @response.code === 200
+					Rails.cache.write('exchanges', @response, expires_in: 2.minutes)
 					render json: @response
 				elsif @response.headers['X-Ratelimit-Remaining'].to_i < 1
 					render json: {
