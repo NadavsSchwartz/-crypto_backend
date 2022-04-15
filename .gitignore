@@ -63,3 +63,6 @@ profile*
 .env.development
 .env.test
 .env.production
+.env
+config/default.ts
+config/production.ts
