@@ -4,7 +4,11 @@ import config from 'config';
 import connectToMongoDB from './utils/connectToMongoDB';
 import log from './utils/logger';
 import router from './routes'
+ 
 const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use(router)
 const port = config.get('port') || 5000;
 
