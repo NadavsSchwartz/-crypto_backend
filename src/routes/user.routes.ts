@@ -1,10 +1,32 @@
 import express from 'express';
-
+import {
+  createUserHandler,
+  forgotPasswordHandler,
+  verifyUserHandler,
+} from '../controller/user.controller';
+import validateResource from '../middleware/validateResource';
+import {
+  createUserSchema,
+  forgotPasswordSchema,
+  verifyUserSchema,
+} from '../schema/user.schema';
 const router = express.Router();
 
- router.post('/signup', (req, res) => {
-     return res.send(200)
- })
+router.post(
+  '/users/signup',
+  validateResource(createUserSchema),
+  createUserHandler
+);
 
+router.get(
+  '/users/verify/:verificationCode',
+  validateResource(verifyUserSchema),
+  verifyUserHandler
+);
 
-export default router
+router.post(
+  '/users/forgot-password',
+  validateResource(forgotPasswordSchema),
+  forgotPasswordHandler
+);
+export default router;

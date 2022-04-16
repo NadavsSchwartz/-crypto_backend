@@ -4,10 +4,9 @@ import authRoutes from './auth.routes';
 const router = express.Router();
 
 router.get('/status', (_, res) => {
-   return res.status(200).send('OK');
-})
-router.use(authRoutes);
-router.use(userRoutes);
+  return res.status(200).send('OK');
+});
+router.use('/api/', authRoutes);
+router.use('/api/', userRoutes);
 
-
-export default router
+export default router;
