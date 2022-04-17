@@ -34,7 +34,7 @@ export const createUserHandler = async (
                 ${baseURL}/api/users/verify/${user.verificationCode}
                 `,
     });
-    return res.status(201).send(user);
+    return res.status(201).send({ message: 'User created successfully' });
   } catch (error: any) {
     if (error.code == 11000) {
       return res.status(409).send({
@@ -89,7 +89,7 @@ export const forgotPasswordHandler = async (
     await user.save();
 
     await sendEmail({
-      from: 'DoNotReply <cryptoapp@cryptoapp.win>',
+      from: 'DoNotReply <support@cryptoapp.win>',
       to: user.email,
       subject: 'Reset your password',
       text: `Hello ${user.firstName},
@@ -119,9 +119,21 @@ export const resetPasswordHandler = async (
     user.passwordResetCode = null;
     user.password = req.body.password;
     await user.save();
+    await sendEmail({
+      from: 'DoNotReply <support@cryptoapp.win>',
+      to: user.email,
+      subject: 'Your password has been reset',
+      text: `Hello ${user.firstName},
+                Your password has been reset successfully.
+                `,
+    });
     return res.status(200).send('Password reset successfully');
   } catch (error) {
     log.debug(error);
     return res.status(500).send(error);
   }
+};
+
+export const getCurrentUserHandler = async (req: Request, res: Response) => {
+  return res.send(res.locals.user);
 };
