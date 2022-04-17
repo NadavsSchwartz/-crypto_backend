@@ -3,11 +3,13 @@ import { nanoid } from 'nanoid';
 import {
   CreateUserInput,
   ForgotPasswordInput,
+  ResetPasswordInput,
   VerifyUserInput,
 } from '../schema/user.schema';
 import {
   createUser,
   findUserByEmail,
+  findUserByPasswordResetCode,
   verifyUser,
 } from '../service/user.service';
 import log from '../utils/logger';
@@ -98,6 +100,28 @@ export const forgotPasswordHandler = async (
 
     return res.send(resetPasswordMessage);
   } catch (error) {
+    return res.status(500).send(error);
+  }
+};
+
+export const resetPasswordHandler = async (
+  req: Request<ResetPasswordInput['params'], {}, ResetPasswordInput['body']>,
+  res: Response
+) => {
+  const { passwordResetCode } = req.params;
+  try {
+    const user = await findUserByPasswordResetCode(passwordResetCode);
+    if (!user) {
+      return res.status(404).send({
+        message: 'User not found or invalid password reset code',
+      });
+    }
+    user.passwordResetCode = null;
+    user.password = req.body.password;
+    await user.save();
+    return res.status(200).send('Password reset successfully');
+  } catch (error) {
+    log.debug(error);
     return res.status(500).send(error);
   }
 };

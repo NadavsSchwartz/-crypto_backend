@@ -20,3 +20,9 @@ export const verifyUser = async (verificationCode: string) => {
 export const findUserByEmail = async (email: string) => {
   return UserModel.findOne({ email });
 };
+
+export const findUserByPasswordResetCode = async (
+  passwordResetCode: string
+) => {
+  return UserModel.findOne({ passwordResetCode });
+};
