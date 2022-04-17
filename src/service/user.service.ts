@@ -11,6 +11,7 @@ export const verifyUser = async (verificationCode: string) => {
 
   if (foundUser) {
     foundUser.isVerified = true;
+
     await foundUser.save();
     return foundUser;
   }
