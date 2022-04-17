@@ -41,21 +41,29 @@ export const forgotPasswordSchema = object({
 
 export const resetPasswordSchema = object({
   params: object({
-    resetPasswordCode: string({
+    passwordResetCode: string({
       required_error: 'Reset Password Code is required',
     }),
   }),
   body: object({
+    oldPassword: string({
+      required_error: 'Old Password is required',
+    }).min(8, 'Old Password must be at least 8 characters long'),
     password: string({
       required_error: 'Password is required',
     }).min(8, 'Password must be at least 8 characters long'),
     passwordConfirmation: string({
       required_error: 'Password Confirm is required',
     }),
-  }).refine((data) => data.password === data.passwordConfirmation, {
-    message: 'Password and Password Confirmation must match',
-    path: ['passwordConfirmation'],
-  }),
+  })
+    .refine((data) => data.password === data.passwordConfirmation, {
+      message: 'Password and Password Confirmation must match',
+      path: ['passwordConfirmation'],
+    })
+    .refine((data) => data.oldPassword !== data.password, {
+      message: 'Old Password and New Password must not match',
+      path: ['password'],
+    }),
 });
 
 export type CreateUserInput = TypeOf<typeof createUserSchema>['body'];
