@@ -1,4 +1,4 @@
-import { privateFields, User } from '../model/user.model';
+import UserModel, { privateFields, User } from '../model/user.model';
 import { DocumentType } from '@typegoose/typegoose';
 import { signJwt } from '../utils/jwt';
 import SessionModel from '../model/session.model';
@@ -21,4 +21,31 @@ export const signRefreshToken = async ({ userId }: { userId: string }) => {
     'refreshTokenPrivateKey',
     { expiresIn: '14d' }
   );
+};
+
+export const findSessionById = async (sessionId: string) =>
+  SessionModel.findById(sessionId);
+
+export const verifySession = async (sessionId: string) => {
+  const foundSession = await findSessionById(sessionId);
+  if (foundSession) {
+    return foundSession;
+  }
+  return null;
+};
+
+export const findUserByEmail = async (email: string) =>
+  UserModel.findOne({ email });
+
+export const findUserByPasswordResetCode = async (passwordResetCode: string) =>
+  UserModel.findOne({ passwordResetCode });
+
+export const verifyUser = async (verificationCode: string) => {
+  const foundUser = await findUserByEmail(verificationCode);
+  if (foundUser) {
+    foundUser.isVerified = true;
+    await foundUser.save();
+    return foundUser;
+  }
+  return null;
 };

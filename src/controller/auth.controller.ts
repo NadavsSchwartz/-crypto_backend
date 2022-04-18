@@ -1,9 +1,14 @@
 import { Request, Response } from 'express';
+import { get } from 'lodash';
 import { CreateSessionInput } from '../schema/auth.schema';
-import { signAccessToken, signRefreshToken } from '../service/auth.services';
-import { findUserByEmail } from '../service/user.service';
+import {
+  findSessionById,
+  signAccessToken,
+  signRefreshToken,
+} from '../service/auth.services';
+import { verifyJwt } from '../utils/jwt';
 import log from '../utils/logger';
-
+import { findUserByEmail, findUserById } from '../service/user.service';
 export const createSessionHandler = async (
   req: Request<{}, {}, CreateSessionInput>,
   res: Response
@@ -38,6 +43,50 @@ export const createSessionHandler = async (
     return res.status(200).send({
       accessToken,
       refreshToken,
+    });
+  } catch (error) {
+    log.error(error);
+    return res.status(500).send(error);
+  }
+};
+
+export const refreshAccessTokenHandler = async (
+  req: Request,
+  res: Response
+) => {
+  const message = 'Refresh token is invalid';
+
+  const refreshToken = get(req, 'headers.x-refresh-token');
+  if (!refreshToken) {
+    return res.status(401).send({ message });
+  }
+  try {
+    const decoded = verifyJwt<{ session: string }>(
+      refreshToken,
+      'refreshTokenPublicKey'
+    );
+    if (!decoded) {
+      return res.status(401).send({
+        message: message,
+      });
+    }
+    const { session } = decoded;
+    const foundSessions = await findSessionById(session);
+    if (!foundSessions || !foundSessions.valid) {
+      return res.status(404).send({
+        message: message,
+      });
+    }
+
+    const user = await findUserById(String(foundSessions.user));
+    if (!user)
+      return res.status(404).send({
+        message: message,
+      });
+
+    const accessToken = signAccessToken(user);
+    return res.status(200).send({
+      accessToken,
     });
   } catch (error) {
     log.error(error);

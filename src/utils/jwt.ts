@@ -11,13 +11,14 @@ export const signJwt = (
   return JWT.sign(payload, key, { ...(options && options) });
 };
 
-export const verifyJwt = (
+export const verifyJwt = <T>(
   token: string,
   keyName: 'accessTokenPublicKey' | 'refreshTokenPublicKey'
-) => {
+): T | null => {
+  console.log(token);
   const key = config.get<string>(keyName);
   try {
-    return JWT.verify(token, key);
+    return JWT.verify(token, key) as T;
   } catch (error) {
     log.error(error, "couldn't Verify JWT");
     return null;

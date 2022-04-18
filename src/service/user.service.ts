@@ -18,6 +18,9 @@ export const verifyUser = async (verificationCode: string) => {
   return null;
 };
 
+export const findUserById = async (id: string) => {
+  return UserModel.findById(id);
+};
 export const findUserByEmail = async (email: string) => {
   return UserModel.findOne({ email });
 };
